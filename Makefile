@@ -1,4 +1,4 @@
-include ../colors.mk
+include ./colors.mk
 
 OS := $(shell uname -s)
 
@@ -13,14 +13,14 @@ HEADERS := $(shell find include -name '*.hpp') $(shell find src -name '*.hpp')
 
 # Assume all sources are in a "flat" directory
 LIB_SOURCES := $(wildcard lib/*.cpp)
-LIBFLAGS := -fpic -shared
+LIBFLAGS := -fpic -shared $(CFLAGS) $(LDFLAGS)
 
 TARGET := crane
 
 ifeq ($(OS), Darwin)
 LIB_EXT := .dylib
 LIB_TARGETS := $(patsubst lib/%.cpp,extern/%.dylib,$(LIB_SOURCES))
-CFLAGS += -DCRANE_DARWIN
+CFLAGS += -DkUsingCraneDarwin
 else
 LIB_EXT := .so
 LIB_TARGETS := $(patsubst lib/%.cpp,extern/%.so,$(LIB_SOURCES))
@@ -41,7 +41,7 @@ $(TARGET): $(OBJ) ${HEADERS}
 
 $(LIB_TARGETS): extern/%$(LIB_EXT) : lib/%.cpp ${HEADERS}
 	@#printf '$(GRN)==>$(BLK) Linking shared library $(subst lib/%.cpp,%,$<)$(RST)\n'
-	$(CXX) $< -o $@ $(CFLAGS) $(LIBFLAGS) -MD -MF $(patsubst extern/%.so,build/deps/lib/%.d,$@)
+	$(CXX) $< -o $@ $(LIBFLAGS) -MD -MF $(patsubst extern/%.so,build/deps/lib/%.d,$@)
 
 $(OBJ): build/%.o : src/%.cpp
 	@#printf '$(GRN)==>$(BLK) Compiling $<$(RST)\n'

@@ -12,20 +12,30 @@ struct CraneCommand;
 
 typedef int (*CraneCommandHandler)(CraneCommand *, CraneContext *);
 
-enum class CraneCommandArgumentType {
+enum class CraneArgumentType {
   Boolean,
-  File,
   String,
   Number
 };
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-variable"
+// clangd doesn't like when this isn't here, it thinks it's unused
+static const char *CraneArgumentTypeNames[] = {
+  "Boolean",
+  "File",
+  "String",
+  "Number"
+};
+#pragma clang diagnostic pop
+
 struct CraneCommandArgument {
 public:
   std::string name; 
-  CraneCommandArgumentType type;
+  CraneArgumentType type;
   bool isOptional;
 
-  CraneCommandArgument(std::string name, bool isOptional, CraneCommandArgumentType type)
+  CraneCommandArgument(std::string name, bool isOptional, CraneArgumentType type)
     : name(name),
       type(type),
       isOptional(isOptional) {}
@@ -38,7 +48,6 @@ public:
   bool isVariadic;
   bool requiresOpenFile;
   bool shouldOverride;
-  int argumentCount;
   CraneCommandHandler handler;
   CraneCommandEntry *overridenEntry;
   std::vector<CraneCommandArgument*> arguments;
@@ -52,13 +61,39 @@ public:
     this->description = desc;
   }
 
-  inline void setCommandRequiresOpenFile(bool requiresOpenFile) {
+  inline void setRequiresOpenFile(bool requiresOpenFile = true) {
     this->requiresOpenFile = requiresOpenFile;
   }
 
-  inline void addArgument(std::string name, bool isOptional, CraneCommandArgumentType type) {
+  inline void addArgument(std::string name, bool isOptional, CraneArgumentType type) {
     auto arg = new CraneCommandArgument(name, isOptional, type);
     arguments.push_back(arg);
+  }
+
+  inline size_t argumentCount() {
+    return arguments.size();
+  }
+
+  inline bool hasOptionalArgs() {
+    for (auto &arg : arguments) {
+      if (arg->isOptional) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  inline int adjustedArgumentCount() {
+    // for each optional argument, we need to subtract one from the argument count
+    int aac = argumentCount();
+    for (auto &arg : arguments) {
+      if (arg->isOptional) {
+        aac--;
+      }
+    }
+
+    return aac;
   }
 };
 

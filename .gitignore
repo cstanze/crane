@@ -1,4 +1,8 @@
 build/
-.cache/
+.cache
+extern
+.vscode/
 crane
+compile_commands.json
+test
 
